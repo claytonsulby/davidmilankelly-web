@@ -1411,18 +1411,15 @@ body.view-photo #photo-lightbox.open .photo-lightbox-next { display: flex !impor
   background-size: cover;
   background-position: 50% 50%;
   z-index: 0;
-  filter: blur(8px);
-  transform: scale(1.05);
+  filter: blur(20px);
+  transform: scale(1.12);
   transition: opacity 0.5s ease;
 }
-.grid-image-inner-wrapper.tiny-playing .grid-blur-poster,
 .grid-image-inner-wrapper.full-loaded .grid-blur-poster {
   opacity: 0;
 }
 
-/* Layer 1: tiny (360p, blurred) — loads first sequentially */
-/* Layer 2: full (720p) — fades in after tiny plays */
-.grid-image .grid-loop-video-tiny,
+/* Full video — fades in over poster */
 .grid-image .grid-loop-video {
   position: absolute;
   inset: 0;
@@ -1431,25 +1428,10 @@ body.view-photo #photo-lightbox.open .photo-lightbox-next { display: flex !impor
   object-fit: cover;
   object-position: 50% 50%;
   pointer-events: none;
-}
-.grid-image .grid-loop-video-tiny {
-  filter: blur(12px);
-  transform: scale(1.08); /* hide blurred edges */
   opacity: 0;
   transition: opacity 0.5s ease;
   z-index: 1;
 }
-.grid-image-inner-wrapper.tiny-playing .grid-loop-video-tiny {
-  opacity: 1;
-}
-.grid-image .grid-loop-video {
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  z-index: 2;
-}
 .grid-image-inner-wrapper.full-loaded .grid-loop-video {
   opacity: 1;
-}
-.grid-image-inner-wrapper.full-loaded .grid-loop-video-tiny {
-  opacity: 0;
 }

@@ -374,50 +374,22 @@ export default function App() {
       document.querySelectorAll('video').forEach(v => safariVideoObserver.observe(v))
 
       if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        // Only remove WebM from full videos — tiny are WebM-only (no MP4 fallback)
-        document.querySelectorAll('.grid-loop-video source[type="video/webm"]').forEach(source => {
+        document.querySelectorAll('video source[type="video/webm"]').forEach(source => {
           source.parentElement.removeChild(source)
         })
       }
     }
 
-    // ===== 3-TIER SEQUENTIAL LOADING =====
-    // poster (instant, base64) → tiny videos one-by-one → full HD queued after each tiny
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    const mainGrid = document.querySelector('.grid-wrapper')
-    const gridWrappers = mainGrid ? Array.from(mainGrid.querySelectorAll('.grid-image-inner-wrapper')) : []
-
-    function loadVideoPromise(video) {
-      return new Promise(resolve => {
-        const timeout = setTimeout(resolve, 5000)
-        video.addEventListener('canplay', () => { clearTimeout(timeout); resolve() }, { once: true })
-        video.preload = 'auto'
-        video.load()
-      })
-    }
-
-    async function loadGridSequential() {
-      for (const wrapper of gridWrappers) {
-        const tiny = wrapper.querySelector('.grid-loop-video-tiny')
-        const full = wrapper.querySelector('.grid-loop-video')
-
-        if (!isIOS && tiny) {
-          await loadVideoPromise(tiny)
-          tiny.play().catch(() => {})
-          wrapper.classList.add('tiny-playing')
-        }
-
-        if (full) {
-          // Load full video in background — don't await, let next tiny start immediately
-          loadVideoPromise(full).then(() => {
-            full.play().catch(() => {})
-            wrapper.classList.add('full-loaded')
-          })
-        }
-      }
-    }
-
-    loadGridSequential()
+    // ===== VIDEO LOADING =====
+    // poster shows instantly (base64, no network) → all full videos load in parallel
+    document.querySelectorAll('.grid-wrapper .grid-loop-video').forEach(video => {
+      video.preload = 'auto'
+      video.load()
+      video.addEventListener('canplay', () => {
+        video.play().catch(() => {})
+        video.closest('.grid-image-inner-wrapper')?.classList.add('full-loaded')
+      }, { once: true })
+    })
 
   }, [])
 
@@ -474,9 +446,6 @@ export default function App() {
         <div className="grid-wrapper">
           <VideoGridItem className="film-beograd featured featured-1" href="#" videoType="youtube" videoId="pR-9xte4bgg" caption="BEOGRAD">
             <div className="grid-blur-poster" style={{ backgroundImage: `url(${videoPosters.beograd})` }} />
-            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="none">
-              <source src="/videos/beograd-loop-tiny.webm" type="video/webm" />
-            </video>
             <video id="beograd-video" className="grid-loop-video" autoPlay loop muted playsInline preload="none">
               <source src="/videos/beograd-loop.webm" type="video/webm" />
               <source src="/videos/beograd-loop.mp4" type="video/mp4" />
@@ -485,9 +454,6 @@ export default function App() {
 
           <VideoGridItem className="grid-item-aspect-3-2 film-deja-vu featured featured-2" href="#" videoType="vimeo" videoId="799266927" caption="DEJA VU LIQUOR">
             <div className="grid-blur-poster" style={{ backgroundImage: `url(${videoPosters.dejavu})` }} />
-            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="none">
-              <source src="/videos/dejavu-loop-tiny.webm" type="video/webm" />
-            </video>
             <video className="grid-loop-video" autoPlay loop muted playsInline preload="none">
               <source src="/videos/dejavu-loop.webm" type="video/webm" />
               <source src="/videos/dejavu-loop.mp4" type="video/mp4" />
@@ -496,9 +462,6 @@ export default function App() {
 
           <VideoGridItem className="film-starling featured featured-3" href="#" videoType="youtube" videoId="H31T2RClBi4" caption="STARLING">
             <div className="grid-blur-poster" style={{ backgroundImage: `url(${videoPosters.starling})` }} />
-            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="none">
-              <source src="/videos/starling-loop-tiny.webm" type="video/webm" />
-            </video>
             <video className="grid-loop-video" autoPlay loop muted playsInline preload="none">
               <source src="/videos/starling-loop.webm" type="video/webm" />
               <source src="/videos/starling-loop.mp4" type="video/mp4" />
@@ -507,9 +470,6 @@ export default function App() {
 
           <VideoGridItem className="film-hero featured featured-4" href="#" videoType="youtube" videoId="i10I_Eh5Zgo" caption="HERO">
             <div className="grid-blur-poster" style={{ backgroundImage: `url(${videoPosters.hero})` }} />
-            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="none">
-              <source src="/videos/hero-loop-tiny.webm" type="video/webm" />
-            </video>
             <video className="grid-loop-video" autoPlay loop muted playsInline preload="none">
               <source src="/videos/hero-loop.webm" type="video/webm" />
               <source src="/videos/hero-loop.mp4" type="video/mp4" />
@@ -518,9 +478,6 @@ export default function App() {
 
           <VideoGridItem className="film-freefall" href="javascript:void(0)" videoType="youtube" videoId="YE8l-5BAG1I" caption="FREEFALL">
             <div className="grid-blur-poster" style={{ backgroundImage: `url(${videoPosters.freefall})` }} />
-            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="none">
-              <source src="/videos/freefall-loop-tiny.webm" type="video/webm" />
-            </video>
             <video className="grid-loop-video" autoPlay loop muted playsInline preload="none">
               <source src="/videos/freefall-loop.webm" type="video/webm" />
             </video>
@@ -528,9 +485,6 @@ export default function App() {
 
           <VideoGridItem className="film-winter" href="javascript:void(0)" videoType="youtube" videoId="OjzvAPvmASw" caption="Winter">
             <div className="grid-blur-poster" style={{ backgroundImage: `url(${videoPosters.winter})` }} />
-            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="none">
-              <source src="/videos/winter-loop-tiny.webm" type="video/webm" />
-            </video>
             <video className="grid-loop-video" autoPlay loop muted playsInline preload="none">
               <source src="/videos/winter-loop.webm" type="video/webm" />
             </video>
@@ -538,9 +492,6 @@ export default function App() {
 
           <VideoGridItem className="film-odd-day" href="javascript:void(0)" videoType="youtube" videoId="E6EhtnpuW24" caption="ODD DAY">
             <div className="grid-blur-poster" style={{ backgroundImage: `url(${videoPosters.odd_day})` }} />
-            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="none">
-              <source src="/videos/odd-day-loop-tiny.webm" type="video/webm" />
-            </video>
             <video className="grid-loop-video" autoPlay loop muted playsInline preload="none">
               <source src="/videos/odd-day-loop.webm" type="video/webm" />
             </video>
@@ -550,9 +501,6 @@ export default function App() {
 
           <VideoGridItem className="grid-item-aspect-3-2 film-colourtrax featured featured-6" href="#" videoType="vimeo" videoId="1131852040" caption="COLOURTRAX">
             <div className="grid-blur-poster" style={{ backgroundImage: `url(${videoPosters.colourtrax})` }} />
-            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="none">
-              <source src="/videos/colourtrax-loop-tiny.webm" type="video/webm" />
-            </video>
             <video className="grid-loop-video" autoPlay loop muted playsInline preload="none">
               <source src="/videos/colourtrax-loop.webm" type="video/webm" />
               <source src="/videos/colourtrax-loop.mp4" type="video/mp4" />
