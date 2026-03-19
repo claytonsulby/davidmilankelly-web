@@ -1404,38 +1404,23 @@ body.view-photo #photo-lightbox.open .photo-lightbox-next { display: flex !impor
 /* ============================================================
    BLUR PLACEHOLDER LOADING
    ============================================================ */
-/* Layer 0: base64 poster — renders instantly, zero network cost */
+/* Blur poster: sits above img and video, fades out when content is ready */
 .grid-image .grid-blur-poster {
   position: absolute;
   inset: 0;
   background-size: cover;
   background-position: 50% 50%;
-  z-index: 0;
+  z-index: 2;
   filter: blur(20px);
   transform: scale(1.12);
   transition: opacity 0.5s ease;
 }
 .grid-image-inner-wrapper.full-loaded .grid-blur-poster {
   opacity: 0;
+  pointer-events: none;
 }
 
-/* Photo img — fades in over poster */
-.grid-image img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 50%;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  z-index: 1;
-}
-.grid-image-inner-wrapper.full-loaded img {
-  opacity: 1;
-}
-
-/* Full video — fades in over poster */
+/* Full video — fades in under poster, poster fades out simultaneously */
 .grid-image .grid-loop-video {
   position: absolute;
   inset: 0;
