@@ -1400,3 +1400,36 @@ body.safari.view-work .grid-wrapper .featured .grid-image {
 #photo-lightbox .photo-lightbox-next { display: none !important; }
 body.view-photo #photo-lightbox.open .photo-lightbox-prev,
 body.view-photo #photo-lightbox.open .photo-lightbox-next { display: flex !important; }
+
+/* ============================================================
+   BLUR PLACEHOLDER LOADING
+   ============================================================ */
+/* Tiny placeholder (360p) plays instantly with blur; full quality fades in over it */
+.grid-image .grid-loop-video-tiny,
+.grid-image .grid-loop-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  pointer-events: none;
+}
+.grid-image .grid-loop-video-tiny {
+  filter: blur(12px);
+  transform: scale(1.08); /* hide blurred edges */
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  z-index: 1;
+}
+.grid-image .grid-loop-video {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 2;
+}
+.grid-image-inner-wrapper.full-loaded .grid-loop-video {
+  opacity: 1;
+}
+.grid-image-inner-wrapper.full-loaded .grid-loop-video-tiny {
+  opacity: 0;
+}

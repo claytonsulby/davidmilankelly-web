@@ -108,9 +108,7 @@ export default function App() {
         captionEl.innerHTML = projectName ? `<span class="playback-caption-project">${projectName}</span>` : ''
       }
 
-      if (overlayCopy) {
-        overlayCopy.innerHTML = ''
-      }
+      if (overlayCopy) overlayCopy.innerHTML = ''
 
       overlay.classList.add('open', 'playback-overlay--work')
       if (isBeograd) overlay.classList.add('playback-overlay--beograd')
@@ -160,7 +158,6 @@ export default function App() {
     }
 
     // ===== EVENT LISTENERS =====
-    // Navigation
     document.querySelectorAll('.header-nav a').forEach(a => {
       a.addEventListener('click', (e) => {
         e.preventDefault()
@@ -171,7 +168,6 @@ export default function App() {
       })
     })
 
-    // Mobile menu
     const menuBtn = document.querySelector('.header-menu-btn')
     const header = document.getElementById('header')
 
@@ -185,9 +181,7 @@ export default function App() {
       menuBtn.setAttribute('aria-expanded', 'false')
     }
 
-    if (menuBtn) {
-      menuBtn.addEventListener('click', toggleMenu)
-    }
+    if (menuBtn) menuBtn.addEventListener('click', toggleMenu)
 
     document.addEventListener('click', (e) => {
       if (header.classList.contains('menu-open') && !header.contains(e.target)) {
@@ -195,7 +189,6 @@ export default function App() {
       }
     })
 
-    // Video tile clicks
     document.querySelectorAll('.grid-item[data-video-type]').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault()
@@ -203,39 +196,32 @@ export default function App() {
       })
     })
 
-    // Photo tile clicks
-    document.querySelectorAll('.photo-item[data-photo-src]').forEach(item => {
+    let currentPhotoIndex = 0
+    document.querySelectorAll('.photo-item[data-photo-src]').forEach((item, i) => {
       item.addEventListener('click', (e) => {
         e.preventDefault()
+        currentPhotoIndex = i
         openPhoto(item.getAttribute('data-photo-src'))
       })
     })
 
-    // Photo lightbox prev/next
-    let currentPhotoIndex = 0
-    document.querySelectorAll('.photo-item[data-photo-src]').forEach((item, i) => {
-      item.addEventListener('click', () => { currentPhotoIndex = i })
-    })
-
     document.querySelector('.photo-lightbox-prev')?.addEventListener('click', () => {
       const visibleItems = photoItems.filter(el => el.offsetParent !== null)
-      if (visibleItems.length === 0) return
+      if (!visibleItems.length) return
       currentPhotoIndex = (currentPhotoIndex - 1 + visibleItems.length) % visibleItems.length
       openPhoto(visibleItems[currentPhotoIndex].getAttribute('data-photo-src'))
     })
 
     document.querySelector('.photo-lightbox-next')?.addEventListener('click', () => {
       const visibleItems = photoItems.filter(el => el.offsetParent !== null)
-      if (visibleItems.length === 0) return
+      if (!visibleItems.length) return
       currentPhotoIndex = (currentPhotoIndex + 1) % visibleItems.length
       openPhoto(visibleItems[currentPhotoIndex].getAttribute('data-photo-src'))
     })
 
-    // Close buttons
     document.querySelector('.playback-close')?.addEventListener('click', closePlayback)
     document.querySelector('.photo-lightbox-close')?.addEventListener('click', closePhotoLightbox)
 
-    // Close on backdrop click
     document.getElementById('playback-overlay')?.addEventListener('click', (e) => {
       if (e.target === e.currentTarget) closePlayback()
     })
@@ -244,7 +230,6 @@ export default function App() {
       if (e.target === e.currentTarget) closePhotoLightbox()
     })
 
-    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         if (document.getElementById('playback-overlay').classList.contains('open')) {
@@ -255,8 +240,7 @@ export default function App() {
       }
     })
 
-    // ===== VIDEO OPTIMIZATION =====
-    const videos = document.querySelectorAll('video')
+    // ===== VIDEO INTERSECTION OBSERVER =====
     const videoObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -267,22 +251,19 @@ export default function App() {
       })
     }, { threshold: 0.1, rootMargin: '50px' })
 
-    videos.forEach(v => videoObserver.observe(v))
+    document.querySelectorAll('video').forEach(v => videoObserver.observe(v))
 
     // ===== SCROLL HANDLER =====
     let ticking = false
     window.addEventListener('scroll', () => {
       if (!ticking) {
-        window.requestAnimationFrame(() => {
-          ticking = false
-        })
+        window.requestAnimationFrame(() => { ticking = false })
         ticking = true
       }
     })
 
-    // ===== IMAGE LOADING OPTIMIZATION =====
-    const images = document.querySelectorAll('.grid-image img')
-    images.forEach(img => {
+    // ===== IMAGE LOADING =====
+    document.querySelectorAll('.grid-image img').forEach(img => {
       if (!img.complete) {
         img.style.opacity = '0'
         img.onload = () => {
@@ -294,10 +275,7 @@ export default function App() {
 
     // Initialize view
     setView(getView())
-
-    window.addEventListener('hashchange', () => {
-      setView(getView())
-    })
+    window.addEventListener('hashchange', () => setView(getView()))
 
     // ===== SAFARI OPTIMIZATIONS =====
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
@@ -328,17 +306,8 @@ export default function App() {
           height: 0 !important;
           visibility: hidden !important;
         }
-
-        video {
-          -webkit-appearance: none;
-          appearance: none;
-          pointer-events: none;
-        }
-
-        .grid-image-inner-wrapper {
-          position: relative;
-        }
-
+        video { -webkit-appearance: none; appearance: none; pointer-events: none; }
+        .grid-image-inner-wrapper { position: relative; }
         .video-tap-overlay {
           display: block !important;
           position: absolute;
@@ -348,19 +317,14 @@ export default function App() {
           background: transparent;
           -webkit-tap-highlight-color: transparent;
         }
-
-        .grid-image-inner-wrapper,
-        video {
+        .grid-image-inner-wrapper, video {
           -webkit-transform: translateZ(0);
           transform: translateZ(0);
           will-change: transform;
           backface-visibility: hidden;
           -webkit-backface-visibility: hidden;
         }
-
-        video {
-          image-rendering: -webkit-optimize-contrast;
-        }
+        video { image-rendering: -webkit-optimize-contrast; }
       `
       document.head.appendChild(style)
 
@@ -372,6 +336,7 @@ export default function App() {
         video.removeAttribute('controls')
         video.controls = false
 
+        // Prefer MP4 for Safari (full-quality videos only — tiny are WebM-only)
         const mp4Source = video.querySelector('source[type="video/mp4"]')
         if (mp4Source && video.children.length > 1) {
           video.src = mp4Source.src
@@ -396,11 +361,10 @@ export default function App() {
 
       const safariVideoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          const video = entry.target
           if (entry.isIntersecting) {
-            setTimeout(() => { video.play().catch(() => {}) }, 100)
+            setTimeout(() => entry.target.play().catch(() => {}), 100)
           } else {
-            video.pause()
+            entry.target.pause()
           }
         })
       }, { threshold: 0.1, rootMargin: '50px' })
@@ -413,44 +377,60 @@ export default function App() {
         })
       }
     }
+
+    // ===== BLUR PLACEHOLDER SWAP =====
+    // Runs after Safari load() calls so listeners are set on the final src
+    setTimeout(() => {
+      document.querySelectorAll('.grid-image-inner-wrapper').forEach(wrapper => {
+        const tiny = wrapper.querySelector('.grid-loop-video-tiny')
+        const full = wrapper.querySelector('.grid-loop-video')
+        if (!tiny || !full) return
+
+        const markLoaded = () => {
+          full.play().catch(() => {})
+          wrapper.classList.add('full-loaded')
+        }
+
+        if (full.readyState >= 3) {
+          markLoaded()
+        } else {
+          full.addEventListener('canplay', markLoaded, { once: true })
+        }
+      })
+    }, 0)
+
   }, [])
 
   return (
     <>
       <PlaybackOverlay />
-
-      {/* Photo lightbox */}
       <PhotoLightbox />
-
       <Header />
 
       <main id="page" role="main">
         <p className="page-section-label" id="page-section-label" aria-hidden="true">FEATURED WORK</p>
 
-        {/* Mobile fallback */}
+        {/* Mobile fallback (always display:none — paths updated, no tiny needed) */}
         <div className="mobile-featured-fallback" aria-hidden="false">
           <VideoGridItem className="film-beograd featured featured-1" href="#" videoType="youtube" videoId="pR-9xte4bgg" caption="BEOGRAD">
             <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="auto" fetchPriority="high">
-              <source src="/videos/beogradintroclip-compressed.webm" type="video/webm" />
-              <source src="/videos/beogradintroclip.mp4" type="video/mp4" />
+              <source src="/videos/beograd-loop.webm" type="video/webm" />
+              <source src="/videos/beograd-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
           <VideoGridItem className="grid-item-aspect-3-2 film-deja-vu featured featured-2" href="#" videoType="vimeo" videoId="799266927" caption="DEJA VU LIQUOR">
-            <img className="dejavu-safari-thumb" src="/images/dejavuliquorthumbnailbackup.jpg" alt="" loading="lazy" decoding="async" />
             <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="metadata">
-              <source src="/videos/dejavushortofficial.webm" type="video/webm" />
-              <source src="/videos/dejavushortofficial.mp4" type="video/mp4" />
+              <source src="/videos/dejavu-loop.webm" type="video/webm" />
+              <source src="/videos/dejavu-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
           <VideoGridItem className="film-starling featured featured-3" href="#" videoType="youtube" videoId="H31T2RClBi4" caption="STARLING">
-            <img className="starling-safari-thumb" src="/images/starlingbackupthumbnail.jpg" alt="" loading="lazy" decoding="async" />
             <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="metadata">
-              <source src="/videos/starling-1.webm" type="video/webm" />
-              <source src="/videos/starling-1.mp4" type="video/mp4" />
+              <source src="/videos/starling-loop.webm" type="video/webm" />
+              <source src="/videos/starling-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
           <VideoGridItem className="film-hero featured featured-4" href="#" videoType="youtube" videoId="i10I_Eh5Zgo" caption="HERO">
-            <img className="hero-safari-thumb" src="/images/herophototif.png" alt="" loading="lazy" decoding="async" />
             <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="metadata">
               <source src="/videos/hero-loop.webm" type="video/webm" />
               <source src="/videos/hero-loop.mp4" type="video/mp4" />
@@ -461,73 +441,96 @@ export default function App() {
             <span className="film-item-caption">Photo</span>
           </div>
           <VideoGridItem className="grid-item-aspect-3-2 film-colourtrax featured featured-6" href="#" videoType="vimeo" videoId="1131852040" caption="COLOURTRAX">
-            <img className="colourtrax-safari-thumb" src="/images/colourtraxthumbnailbackup.jpg" alt="" loading="lazy" decoding="async" />
             <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="metadata">
-              <source src="/videos/colourtraxforwebm.webm" type="video/webm" />
-              <source src="/videos/colourtraxforwebm.mp4" type="video/mp4" />
+              <source src="/videos/colourtrax-loop.webm" type="video/webm" />
+              <source src="/videos/colourtrax-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
         </div>
 
-        {/* Info placeholder */}
         <InfoPlaceholder />
 
         {/* Main grid */}
         <div className="grid-wrapper">
           <VideoGridItem className="film-beograd featured featured-1" href="#" videoType="youtube" videoId="pR-9xte4bgg" caption="BEOGRAD">
-            <img className="beograd-film-cover" src="/images/beograd-16x9-cover.jpg" alt="" loading="lazy" decoding="async" />
+            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="auto" fetchPriority="high">
+              <source src="/videos/beograd-loop-tiny.webm" type="video/webm" />
+            </video>
             <video id="beograd-video" className="grid-loop-video" autoPlay loop muted playsInline preload="auto" fetchPriority="high">
-              <source src="/videos/beogradintroclip-compressed.webm" type="video/webm" />
-              <source src="/videos/beogradintroclip.mp4" type="video/mp4" />
-            </video>
-            <video className="grid-loop-video beograd-film-trailer" autoPlay loop muted playsInline preload="metadata">
-              <source src="/videos/beograd-trailer-shortened-hd.webm" type="video/webm" />
+              <source src="/videos/beograd-loop.webm" type="video/webm" />
+              <source src="/videos/beograd-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
+
           <VideoGridItem className="grid-item-aspect-3-2 film-deja-vu featured featured-2" href="#" videoType="vimeo" videoId="799266927" caption="DEJA VU LIQUOR">
-            <img className="dejavu-safari-thumb" src="/images/dejavuliquorthumbnailbackup.jpg" alt="" loading="lazy" decoding="async" />
-            <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata">
-              <source src="/videos/dejavushortofficial.webm" type="video/webm" />
-              <source src="/videos/dejavushortofficial.mp4" type="video/mp4" />
+            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/dejavu-loop-tiny.webm" type="video/webm" />
+            </video>
+            <video className="grid-loop-video" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/dejavu-loop.webm" type="video/webm" />
+              <source src="/videos/dejavu-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
+
           <VideoGridItem className="film-starling featured featured-3" href="#" videoType="youtube" videoId="H31T2RClBi4" caption="STARLING">
-            <img className="starling-safari-thumb" src="/images/starlingbackupthumbnail.jpg" alt="" loading="lazy" decoding="async" />
-            <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata">
-              <source src="/videos/starling-1.webm" type="video/webm" />
-              <source src="/videos/starling-1.mp4" type="video/mp4" />
+            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/starling-loop-tiny.webm" type="video/webm" />
+            </video>
+            <video className="grid-loop-video" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/starling-loop.webm" type="video/webm" />
+              <source src="/videos/starling-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
+
           <VideoGridItem className="film-hero featured featured-4" href="#" videoType="youtube" videoId="i10I_Eh5Zgo" caption="HERO">
-            <img className="hero-safari-thumb" src="/images/herophototif.png" alt="" loading="lazy" decoding="async" />
-            <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/hero-loop-tiny.webm" type="video/webm" />
+            </video>
+            <video className="grid-loop-video" autoPlay loop muted playsInline preload="auto">
               <source src="/videos/hero-loop.webm" type="video/webm" />
               <source src="/videos/hero-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
+
           <VideoGridItem className="film-freefall" href="javascript:void(0)" videoType="youtube" videoId="YE8l-5BAG1I" caption="FREEFALL">
-            <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata" poster="https://img.youtube.com/vi/YE8l-5BAG1I/maxresdefault.jpg">
-              <source src="/videos/freefall-1.webm" type="video/webm" />
+            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/freefall-loop-tiny.webm" type="video/webm" />
+            </video>
+            <video className="grid-loop-video" autoPlay loop muted playsInline preload="auto" poster="https://img.youtube.com/vi/YE8l-5BAG1I/maxresdefault.jpg">
+              <source src="/videos/freefall-loop.webm" type="video/webm" />
             </video>
           </VideoGridItem>
+
           <VideoGridItem className="film-winter" href="javascript:void(0)" videoType="youtube" videoId="OjzvAPvmASw" caption="Winter">
-            <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata" poster="https://img.youtube.com/vi/OjzvAPvmASw/maxresdefault.jpg">
-              <source src="/videos/winter.webm" type="video/webm" />
+            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/winter-loop-tiny.webm" type="video/webm" />
+            </video>
+            <video className="grid-loop-video" autoPlay loop muted playsInline preload="auto" poster="https://img.youtube.com/vi/OjzvAPvmASw/maxresdefault.jpg">
+              <source src="/videos/winter-loop.webm" type="video/webm" />
             </video>
           </VideoGridItem>
+
           <VideoGridItem className="film-odd-day" href="javascript:void(0)" videoType="youtube" videoId="E6EhtnpuW24" caption="ODD DAY">
-            <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata" poster="https://img.youtube.com/vi/E6EhtnpuW24/maxresdefault.jpg">
-              <source src="/videos/odd-day-segment-2.webm" type="video/webm" />
+            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/odd-day-loop-tiny.webm" type="video/webm" />
+            </video>
+            <video className="grid-loop-video" autoPlay loop muted playsInline preload="auto" poster="https://img.youtube.com/vi/E6EhtnpuW24/maxresdefault.jpg">
+              <source src="/videos/odd-day-loop.webm" type="video/webm" />
             </video>
           </VideoGridItem>
+
           <PhotoItem className="featured featured-5" photoSrc="/images/1.jpg" src="/images/1.jpg" />
+
           <VideoGridItem className="grid-item-aspect-3-2 film-colourtrax featured featured-6" href="#" videoType="vimeo" videoId="1131852040" caption="COLOURTRAX">
-            <img className="colourtrax-safari-thumb" src="/images/colourtraxthumbnailbackup.jpg" alt="" loading="lazy" decoding="async" />
-            <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata">
-              <source src="/videos/colourtraxforwebm.webm" type="video/webm" />
-              <source src="/videos/colourtraxforwebm.mp4" type="video/mp4" />
+            <video className="grid-loop-video-tiny" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/colourtrax-loop-tiny.webm" type="video/webm" />
+            </video>
+            <video className="grid-loop-video" autoPlay loop muted playsInline preload="auto">
+              <source src="/videos/colourtrax-loop.webm" type="video/webm" />
+              <source src="/videos/colourtrax-loop.mp4" type="video/mp4" />
             </video>
           </VideoGridItem>
+
           <PhotoItem className="photo-tab-only" photoSrc="/images/1.jpg" src="/images/1.jpg" />
           <PhotoItem className="photo-tab-only" photoSrc="/images/3.jpg" src="/images/3.jpg" />
           <PhotoItem className="photo-tab-only" photoSrc="/images/billboard-frost-children.png" src="/images/billboard-frost-children.png" alt="Billboard frost children" />
