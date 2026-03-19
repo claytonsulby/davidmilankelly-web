@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import PhotoLightbox from './components/PhotoLightbox.jsx'
 
 export default function App() {
   const initialized = useRef(false)
@@ -425,13 +426,7 @@ export default function App() {
       </div>
 
       {/* Photo lightbox */}
-      <div id="photo-lightbox" aria-hidden="true">
-        <div className="photo-lightbox-backdrop" aria-hidden="true"></div>
-        <button type="button" className="photo-lightbox-close" aria-label="Close">&times;</button>
-        <button type="button" className="photo-lightbox-prev" aria-label="Previous"><span className="arrow-icon" aria-hidden="true"></span></button>
-        <button type="button" className="photo-lightbox-next" aria-label="Next"><span className="arrow-icon" aria-hidden="true"></span></button>
-        <img id="photo-lightbox-img" src="" alt="" />
-      </div>
+      <PhotoLightbox />
 
       {/* Header */}
       <header id="header">
