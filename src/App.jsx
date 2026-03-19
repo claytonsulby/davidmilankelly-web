@@ -1,0 +1,751 @@
+import { useEffect, useRef } from 'react'
+
+export default function App() {
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
+
+    // ===== SIMPLE VIEW MANAGER =====
+    const viewLabels = { work: 'FEATURED WORK', film: 'Film', photo: 'Photography' }
+    const labelEl = document.getElementById('page-section-label')
+    const infoEl = document.getElementById('info-placeholder')
+    const nav = document.querySelector('.header-nav')
+
+    function getView() {
+      const hash = window.location.hash.slice(1).toLowerCase()
+      return ['film', 'photo', 'info'].includes(hash) ? hash : 'work'
+    }
+
+    function setView(view) {
+      document.body.style.opacity = '0.8'
+      setTimeout(() => {
+        document.body.className = `view-${view}`
+        document.body.style.opacity = '1'
+      }, 50)
+
+      nav.querySelectorAll('a').forEach(a => {
+        if (a.dataset.view === view) {
+          a.setAttribute('aria-current', 'page')
+        } else {
+          a.removeAttribute('aria-current')
+        }
+      })
+
+      if (labelEl) {
+        labelEl.style.opacity = '0'
+        labelEl.style.transform = 'translateY(-10px)'
+        setTimeout(() => {
+          labelEl.textContent = viewLabels[view] || ''
+          labelEl.setAttribute('aria-hidden', view === 'info' ? 'true' : 'false')
+          labelEl.style.opacity = '1'
+          labelEl.style.transform = 'translateY(0)'
+        }, 100)
+      }
+
+      if (infoEl) {
+        infoEl.setAttribute('aria-hidden', view !== 'info' ? 'true' : 'false')
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    // ===== VIDEO PLAYBACK =====
+    window.openVideoPlayback = function(link) {
+      const type = link.getAttribute('data-video-type')
+      const id = link.getAttribute('data-video-id')
+      if (!type || !id) return false
+
+      const overlay = document.getElementById('playback-overlay')
+      const embed = document.getElementById('playback-embed')
+      const captionEl = document.getElementById('playback-caption')
+      const overlayCopy = document.getElementById('playback-video-overlay-copy')
+
+      if (!overlay || !embed) return false
+
+      const src = type === 'youtube'
+        ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`
+        : type === 'vimeo'
+          ? `https://player.vimeo.com/video/${id}?autoplay=1`
+          : ''
+
+      if (!src) return false
+
+      const isBeograd = id === 'pR-9xte4bgg' || link.classList.contains('film-beograd')
+
+      if (isBeograd && type === 'youtube') {
+        embed.innerHTML = `
+          <div class="playback-beograd-thumb">
+            <img src="/images/beograd-16x9-cover.jpg" alt="">
+            <button type="button" class="playback-beograd-play" aria-label="Play"></button>
+          </div>
+        `
+
+        const thumbWrap = embed.querySelector('.playback-beograd-thumb')
+        const playBtn = embed.querySelector('.playback-beograd-play')
+
+        function startBeogradVideo() {
+          embed.innerHTML = `<iframe src="${src}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:none;"></iframe>`
+        }
+
+        if (playBtn) playBtn.addEventListener('click', (e) => { e.stopPropagation(); startBeogradVideo() })
+        if (thumbWrap) thumbWrap.addEventListener('click', (e) => { if (e.target === thumbWrap || e.target.tagName === 'IMG') startBeogradVideo() })
+      } else {
+        embed.innerHTML = `<iframe src="${src}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:none;"></iframe>`
+      }
+
+      const projectName = link.getAttribute('title') ||
+        (link.querySelector('.film-item-caption') && link.querySelector('.film-item-caption').textContent) || ''
+
+      if (captionEl) {
+        captionEl.innerHTML = projectName ? `<span class="playback-caption-project">${projectName}</span>` : ''
+      }
+
+      if (overlayCopy) {
+        overlayCopy.innerHTML = ''
+      }
+
+      overlay.classList.add('open', 'playback-overlay--work')
+      if (isBeograd) overlay.classList.add('playback-overlay--beograd')
+      overlay.setAttribute('aria-hidden', 'false')
+
+      return false
+    }
+
+    // ===== PHOTO LIGHTBOX =====
+    const photoItems = Array.from(document.querySelectorAll('.photo-item[data-photo-src]'))
+
+    function openPhoto(src) {
+      const lightbox = document.getElementById('photo-lightbox')
+      const img = document.getElementById('photo-lightbox-img')
+
+      img.classList.remove('photo-lightbox-img-visible')
+      img.src = src
+
+      if (img.complete) {
+        img.classList.add('photo-lightbox-img-visible')
+      } else {
+        img.onload = () => img.classList.add('photo-lightbox-img-visible')
+      }
+
+      lightbox.classList.add('open')
+      lightbox.setAttribute('aria-hidden', 'false')
+    }
+
+    // ===== CLOSE HANDLERS =====
+    function closePlayback() {
+      const overlay = document.getElementById('playback-overlay')
+      const embed = document.getElementById('playback-embed')
+      const caption = document.getElementById('playback-caption')
+      const overlayCopy = document.getElementById('playback-video-overlay-copy')
+
+      overlay.classList.remove('open', 'playback-overlay--work', 'playback-overlay--beograd')
+      overlay.setAttribute('aria-hidden', 'true')
+      if (embed) embed.innerHTML = ''
+      if (caption) caption.innerHTML = ''
+      if (overlayCopy) overlayCopy.innerHTML = ''
+    }
+
+    function closePhotoLightbox() {
+      const lightbox = document.getElementById('photo-lightbox')
+      lightbox.classList.remove('open')
+      lightbox.setAttribute('aria-hidden', 'true')
+    }
+
+    // ===== EVENT LISTENERS =====
+    // Navigation
+    document.querySelectorAll('.header-nav a').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault()
+        const view = a.dataset.view
+        window.location.hash = view === 'work' ? '' : view
+        setView(view)
+        closeMenu()
+      })
+    })
+
+    // Mobile menu
+    const menuBtn = document.querySelector('.header-menu-btn')
+    const header = document.getElementById('header')
+
+    function toggleMenu() {
+      header.classList.toggle('menu-open')
+      menuBtn.setAttribute('aria-expanded', header.classList.contains('menu-open'))
+    }
+
+    function closeMenu() {
+      header.classList.remove('menu-open')
+      menuBtn.setAttribute('aria-expanded', 'false')
+    }
+
+    if (menuBtn) {
+      menuBtn.addEventListener('click', toggleMenu)
+    }
+
+    document.addEventListener('click', (e) => {
+      if (header.classList.contains('menu-open') && !header.contains(e.target)) {
+        closeMenu()
+      }
+    })
+
+    // Video tile clicks
+    document.querySelectorAll('.grid-item[data-video-type]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault()
+        window.openVideoPlayback(item)
+      })
+    })
+
+    // Photo tile clicks
+    document.querySelectorAll('.photo-item[data-photo-src]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault()
+        openPhoto(item.getAttribute('data-photo-src'))
+      })
+    })
+
+    // Photo lightbox prev/next
+    let currentPhotoIndex = 0
+    document.querySelectorAll('.photo-item[data-photo-src]').forEach((item, i) => {
+      item.addEventListener('click', () => { currentPhotoIndex = i })
+    })
+
+    document.querySelector('.photo-lightbox-prev')?.addEventListener('click', () => {
+      const visibleItems = photoItems.filter(el => el.offsetParent !== null)
+      if (visibleItems.length === 0) return
+      currentPhotoIndex = (currentPhotoIndex - 1 + visibleItems.length) % visibleItems.length
+      openPhoto(visibleItems[currentPhotoIndex].getAttribute('data-photo-src'))
+    })
+
+    document.querySelector('.photo-lightbox-next')?.addEventListener('click', () => {
+      const visibleItems = photoItems.filter(el => el.offsetParent !== null)
+      if (visibleItems.length === 0) return
+      currentPhotoIndex = (currentPhotoIndex + 1) % visibleItems.length
+      openPhoto(visibleItems[currentPhotoIndex].getAttribute('data-photo-src'))
+    })
+
+    // Close buttons
+    document.querySelector('.playback-close')?.addEventListener('click', closePlayback)
+    document.querySelector('.photo-lightbox-close')?.addEventListener('click', closePhotoLightbox)
+
+    // Close on backdrop click
+    document.getElementById('playback-overlay')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closePlayback()
+    })
+
+    document.getElementById('photo-lightbox')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closePhotoLightbox()
+    })
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (document.getElementById('playback-overlay').classList.contains('open')) {
+          closePlayback()
+        } else if (document.getElementById('photo-lightbox').classList.contains('open')) {
+          closePhotoLightbox()
+        }
+      }
+    })
+
+    // ===== VIDEO OPTIMIZATION =====
+    const videos = document.querySelectorAll('video')
+    const videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.play().catch(() => {})
+        } else {
+          entry.target.pause()
+        }
+      })
+    }, { threshold: 0.1, rootMargin: '50px' })
+
+    videos.forEach(v => videoObserver.observe(v))
+
+    // ===== SCROLL HANDLER =====
+    let ticking = false
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          ticking = false
+        })
+        ticking = true
+      }
+    })
+
+    // ===== IMAGE LOADING OPTIMIZATION =====
+    const images = document.querySelectorAll('.grid-image img')
+    images.forEach(img => {
+      if (!img.complete) {
+        img.style.opacity = '0'
+        img.onload = () => {
+          img.style.transition = 'opacity 0.3s ease'
+          img.style.opacity = '1'
+        }
+      }
+    })
+
+    // Initialize view
+    setView(getView())
+
+    window.addEventListener('hashchange', () => {
+      setView(getView())
+    })
+
+    // ===== SAFARI OPTIMIZATIONS =====
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
+                     /iPad|iPhone|iPod/.test(navigator.userAgent)
+
+    if (isSafari) {
+      document.body.classList.add('safari')
+
+      const style = document.createElement('style')
+      style.textContent = `
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-panel,
+        video::-webkit-media-controls-play-button,
+        video::-webkit-media-controls-start-playback-button,
+        video::-webkit-media-controls-overlay-play-button,
+        video::-webkit-media-controls-enclosure,
+        video::-webkit-media-controls-timeline,
+        video::-webkit-media-controls-current-time-display,
+        video::-webkit-media-controls-time-remaining-display,
+        video::-webkit-media-controls-toggle-closed-captions-button,
+        video::-webkit-media-controls-fullscreen-button,
+        video::-webkit-media-controls-volume-slider,
+        video::-webkit-media-controls-mute-button {
+          display: none !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+          width: 0 !important;
+          height: 0 !important;
+          visibility: hidden !important;
+        }
+
+        video {
+          -webkit-appearance: none;
+          appearance: none;
+          pointer-events: none;
+        }
+
+        .grid-image-inner-wrapper {
+          position: relative;
+        }
+
+        .video-tap-overlay {
+          display: block !important;
+          position: absolute;
+          inset: 0;
+          z-index: 20;
+          cursor: pointer;
+          background: transparent;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .grid-image-inner-wrapper,
+        video {
+          -webkit-transform: translateZ(0);
+          transform: translateZ(0);
+          will-change: transform;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+        }
+
+        video {
+          image-rendering: -webkit-optimize-contrast;
+        }
+      `
+      document.head.appendChild(style)
+
+      document.querySelectorAll('video').forEach(video => {
+        video.style.webkitTransform = 'translateZ(0)'
+        video.style.transform = 'translateZ(0)'
+        video.muted = true
+        video.setAttribute('muted', '')
+        video.removeAttribute('controls')
+        video.controls = false
+
+        const mp4Source = video.querySelector('source[type="video/mp4"]')
+        if (mp4Source && video.children.length > 1) {
+          video.src = mp4Source.src
+          video.load()
+        }
+
+        const wrapper = video.closest('.grid-image-inner-wrapper')
+        if (wrapper && !wrapper.querySelector('.video-tap-overlay')) {
+          const tapOverlay = document.createElement('div')
+          tapOverlay.className = 'video-tap-overlay'
+          tapOverlay.setAttribute('aria-hidden', 'true')
+          tapOverlay.addEventListener('click', (e) => {
+            e.preventDefault()
+            const gridItem = wrapper.closest('.grid-item')
+            if (gridItem && gridItem.dataset.videoType && gridItem.dataset.videoId) {
+              window.openVideoPlayback?.(gridItem)
+            }
+          })
+          wrapper.appendChild(tapOverlay)
+        }
+      })
+
+      const safariVideoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const video = entry.target
+          if (entry.isIntersecting) {
+            setTimeout(() => { video.play().catch(() => {}) }, 100)
+          } else {
+            video.pause()
+          }
+        })
+      }, { threshold: 0.1, rootMargin: '50px' })
+
+      document.querySelectorAll('video').forEach(v => safariVideoObserver.observe(v))
+
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        document.querySelectorAll('video source[type="video/webm"]').forEach(source => {
+          source.parentElement.removeChild(source)
+        })
+      }
+    }
+  }, [])
+
+  return (
+    <>
+      {/* Playback overlay */}
+      <div id="playback-overlay" aria-hidden="true">
+        <div className="playback-backdrop" aria-hidden="true"></div>
+        <div className="playback-inner">
+          <button type="button" className="playback-close" aria-label="Close">&times;</button>
+          <div className="playback-video-wrap">
+            <div id="playback-embed"></div>
+            <div id="playback-video-overlay-copy" className="playback-video-overlay-copy" aria-hidden="true"></div>
+          </div>
+          <div id="playback-caption" className="playback-caption"></div>
+        </div>
+      </div>
+
+      {/* Photo lightbox */}
+      <div id="photo-lightbox" aria-hidden="true">
+        <div className="photo-lightbox-backdrop" aria-hidden="true"></div>
+        <button type="button" className="photo-lightbox-close" aria-label="Close">&times;</button>
+        <button type="button" className="photo-lightbox-prev" aria-label="Previous"><span className="arrow-icon" aria-hidden="true"></span></button>
+        <button type="button" className="photo-lightbox-next" aria-label="Next"><span className="arrow-icon" aria-hidden="true"></span></button>
+        <img id="photo-lightbox-img" src="" alt="" />
+      </div>
+
+      {/* Header */}
+      <header id="header">
+        <div className="header-title">
+          <a href="#">david milan kelly</a>
+        </div>
+        <div className="header-nav-wrap">
+          <button type="button" className="header-menu-btn" aria-label="Menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+          <nav className="header-nav">
+            <a href="#" data-view="work">Work</a>
+            <a href="#film" data-view="film">Film</a>
+            <a href="#photo" data-view="photo">Photo</a>
+            <a href="#info" data-view="info">Info</a>
+          </nav>
+        </div>
+      </header>
+
+      <main id="page" role="main">
+        <p className="page-section-label" id="page-section-label" aria-hidden="true">FEATURED WORK</p>
+
+        {/* Mobile fallback */}
+        <div className="mobile-featured-fallback" aria-hidden="false">
+          <a className="grid-item film-beograd featured featured-1" href="#" data-video-type="youtube" data-video-id="pR-9xte4bgg">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="auto" fetchPriority="high">
+                  <source src="/videos/beogradintroclip-compressed.webm" type="video/webm" />
+                  <source src="/videos/beogradintroclip.mp4" type="video/mp4" />
+                </video>
+              </div>
+            </div>
+            <span className="film-item-caption">BEOGRAD</span>
+          </a>
+          <a className="grid-item grid-item-aspect-3-2 film-deja-vu featured featured-2" href="#" data-video-type="vimeo" data-video-id="799266927">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="dejavu-safari-thumb" src="/images/dejavuliquorthumbnailbackup.jpg" alt="" loading="lazy" decoding="async" />
+                <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/dejavushortofficial.webm" type="video/webm" />
+                  <source src="/videos/dejavushortofficial.mp4" type="video/mp4" />
+                </video>
+              </div>
+            </div>
+            <span className="film-item-caption">DEJA VU LIQUOR</span>
+          </a>
+          <a className="grid-item film-starling featured featured-3" href="#" data-video-type="youtube" data-video-id="H31T2RClBi4">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="starling-safari-thumb" src="/images/starlingbackupthumbnail.jpg" alt="" loading="lazy" decoding="async" />
+                <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/starling-1.webm" type="video/webm" />
+                  <source src="/videos/starling-1.mp4" type="video/mp4" />
+                </video>
+              </div>
+            </div>
+            <span className="film-item-caption">STARLING</span>
+          </a>
+          <a className="grid-item film-hero featured featured-4" href="#" data-video-type="youtube" data-video-id="i10I_Eh5Zgo">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="hero-safari-thumb" src="/images/herophototif.png" alt="" loading="lazy" decoding="async" />
+                <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/hero-loop.webm" type="video/webm" />
+                  <source src="/videos/hero-loop.mp4" type="video/mp4" />
+                </video>
+              </div>
+            </div>
+            <span className="film-item-caption">HERO</span>
+          </a>
+          <div className="photo-item featured featured-5" data-photo-src="/images/1.jpg">
+            <img src="/images/1.jpg" alt="" />
+            <span className="film-item-caption">Photo</span>
+          </div>
+          <a className="grid-item grid-item-aspect-3-2 film-colourtrax featured featured-6" href="#" data-video-type="vimeo" data-video-id="1131852040">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="colourtrax-safari-thumb" src="/images/colourtraxthumbnailbackup.jpg" alt="" loading="lazy" decoding="async" />
+                <video className="mobile-fallback-video grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/colourtraxforwebm.webm" type="video/webm" />
+                  <source src="/videos/colourtraxforwebm.mp4" type="video/mp4" />
+                </video>
+              </div>
+            </div>
+            <span className="film-item-caption">COLOURTRAX</span>
+          </a>
+        </div>
+
+        {/* Info placeholder */}
+        <div id="info-placeholder" className="info-placeholder" aria-hidden="true">
+          <p>Grew up between Los Angeles and Belgrade, Serbia.</p>
+          <p>Director. Writer. Photographer.</p>
+          <p>His recent film BEOGRAD was officially selected for competition at the Oscar Qualifying Palm Springs International Shortfest.</p>
+          <h2>Selected clients:</h2>
+          <p>Atlantic Records, Sony Music Entertainment, NME Magazine, Paper Magazine, Dangerbird Records, Winspear, Jenkem Magazine, Times Square NYC, Spotify</p>
+          <p className="info-email"><a href="mailto:davidmilankelly@gmail.com">davidmilankelly@gmail.com</a></p>
+          <p className="info-instagram">
+            <a href="https://instagram.com/davidflipsout" target="_blank" rel="noopener noreferrer" aria-label="Instagram @davidflipsout">
+              <svg className="info-instagram-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              <span>@davidflipsout</span>
+            </a>
+          </p>
+        </div>
+
+        {/* Main grid */}
+        <div className="grid-wrapper">
+          <a className="grid-item film-beograd featured featured-1" href="#" data-video-type="youtube" data-video-id="pR-9xte4bgg">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="beograd-film-cover" src="/images/beograd-16x9-cover.jpg" alt="" loading="lazy" decoding="async" />
+                <video id="beograd-video" className="grid-loop-video" autoPlay loop muted playsInline preload="auto" fetchPriority="high">
+                  <source src="/videos/beogradintroclip-compressed.webm" type="video/webm" />
+                  <source src="/videos/beogradintroclip.mp4" type="video/mp4" />
+                </video>
+                <video className="grid-loop-video beograd-film-trailer" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/beograd-trailer-shortened-hd.webm" type="video/webm" />
+                </video>
+              </div>
+              <span className="film-item-caption">BEOGRAD</span>
+            </div>
+          </a>
+          <a className="grid-item grid-item-aspect-3-2 film-deja-vu featured featured-2" href="#" data-video-type="vimeo" data-video-id="799266927">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="dejavu-safari-thumb" src="/images/dejavuliquorthumbnailbackup.jpg" alt="" loading="lazy" decoding="async" />
+                <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/dejavushortofficial.webm" type="video/webm" />
+                  <source src="/videos/dejavushortofficial.mp4" type="video/mp4" />
+                </video>
+              </div>
+              <span className="film-item-caption">DEJA VU LIQUOR</span>
+            </div>
+          </a>
+          <a className="grid-item film-starling featured featured-3" href="#" data-video-type="youtube" data-video-id="H31T2RClBi4">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="starling-safari-thumb" src="/images/starlingbackupthumbnail.jpg" alt="" loading="lazy" decoding="async" />
+                <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/starling-1.webm" type="video/webm" />
+                  <source src="/videos/starling-1.mp4" type="video/mp4" />
+                </video>
+              </div>
+              <span className="film-item-caption">STARLING</span>
+            </div>
+          </a>
+          <a className="grid-item film-hero featured featured-4" href="#" data-video-type="youtube" data-video-id="i10I_Eh5Zgo">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="hero-safari-thumb" src="/images/herophototif.png" alt="" loading="lazy" decoding="async" />
+                <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/hero-loop.webm" type="video/webm" />
+                  <source src="/videos/hero-loop.mp4" type="video/mp4" />
+                </video>
+              </div>
+              <span className="film-item-caption">HERO</span>
+            </div>
+          </a>
+          <a className="grid-item film-freefall" href="javascript:void(0)" data-video-type="youtube" data-video-id="YE8l-5BAG1I">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata" poster="https://img.youtube.com/vi/YE8l-5BAG1I/maxresdefault.jpg">
+                  <source src="/videos/freefall-1.webm" type="video/webm" />
+                </video>
+              </div>
+              <span className="film-item-caption">FREEFALL</span>
+            </div>
+          </a>
+          <a className="grid-item film-winter" href="javascript:void(0)" data-video-type="youtube" data-video-id="OjzvAPvmASw">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata" poster="https://img.youtube.com/vi/OjzvAPvmASw/maxresdefault.jpg">
+                  <source src="/videos/winter.webm" type="video/webm" />
+                </video>
+              </div>
+              <span className="film-item-caption">Winter</span>
+            </div>
+          </a>
+          <a className="grid-item film-odd-day" href="javascript:void(0)" data-video-type="youtube" data-video-id="E6EhtnpuW24">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata" poster="https://img.youtube.com/vi/E6EhtnpuW24/maxresdefault.jpg">
+                  <source src="/videos/odd-day-segment-2.webm" type="video/webm" />
+                </video>
+              </div>
+              <span className="film-item-caption">ODD DAY</span>
+            </div>
+          </a>
+          <div className="photo-item featured featured-5" data-photo-src="/images/1.jpg">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/1.jpg" alt="" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <a className="grid-item grid-item-aspect-3-2 film-colourtrax featured featured-6" href="#" data-video-type="vimeo" data-video-id="1131852040">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img className="colourtrax-safari-thumb" src="/images/colourtraxthumbnailbackup.jpg" alt="" loading="lazy" decoding="async" />
+                <video className="grid-loop-video" autoPlay loop muted playsInline preload="metadata">
+                  <source src="/videos/colourtraxforwebm.webm" type="video/webm" />
+                  <source src="/videos/colourtraxforwebm.mp4" type="video/mp4" />
+                </video>
+              </div>
+              <span className="film-item-caption">COLOURTRAX</span>
+            </div>
+          </a>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/1.jpg">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/1.jpg" alt="" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/3.jpg">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/3.jpg" alt="" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/billboard-frost-children.png">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/billboard-frost-children.png" alt="Billboard frost children" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/2.jpg">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/2.jpg" alt="" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/julie-nme-images.png">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/julie-nme-images.png" alt="Julie NME images" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/2girlsofficial.png">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/2girlsofficial.png" alt="2 girls official" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/hongkonganime.JPG">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/hongkonganime.JPG" alt="Hong Kong anime" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/catherine.webp">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/catherine.webp" alt="Catherine" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/2girls-from-hero-jpg.webp">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/2girls-from-hero-jpg.webp" alt="2 girls from hero" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/herophototif.png">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/herophototif.png" alt="Hero" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/colourtrax-edgy.webp">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/colourtrax-edgy.webp" alt="Colourtrax edgy" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/colourtrax-cloe.webp">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/colourtrax-cloe.webp" alt="Colourtrax cloe" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/sofia.webp">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/sofia.webp" alt="Sofia" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/JULIEmain.webp">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/JULIEmain.webp" alt="Sofia" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+          <div className="photo-item photo-tab-only" data-photo-src="/images/frost-billboard.webp">
+            <div className="grid-image">
+              <div className="grid-image-inner-wrapper">
+                <img src="/images/frost-billboard.webp" alt="" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </>
+  )
+}
