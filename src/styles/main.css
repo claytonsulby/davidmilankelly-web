@@ -1404,7 +1404,22 @@ body.view-photo #photo-lightbox.open .photo-lightbox-next { display: flex !impor
 /* ============================================================
    BLUR PLACEHOLDER LOADING
    ============================================================ */
-/* Tiny placeholder (360p) plays instantly with blur; full quality fades in over it */
+/* Layer 0: base64 poster — renders instantly, zero network cost */
+.grid-image .grid-blur-poster {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: 50% 50%;
+  z-index: 0;
+  transition: opacity 0.5s ease;
+}
+.grid-image-inner-wrapper.tiny-playing .grid-blur-poster,
+.grid-image-inner-wrapper.full-loaded .grid-blur-poster {
+  opacity: 0;
+}
+
+/* Layer 1: tiny (360p, blurred) — loads first sequentially */
+/* Layer 2: full (720p) — fades in after tiny plays */
 .grid-image .grid-loop-video-tiny,
 .grid-image .grid-loop-video {
   position: absolute;
@@ -1418,9 +1433,12 @@ body.view-photo #photo-lightbox.open .photo-lightbox-next { display: flex !impor
 .grid-image .grid-loop-video-tiny {
   filter: blur(12px);
   transform: scale(1.08); /* hide blurred edges */
-  opacity: 1;
+  opacity: 0;
   transition: opacity 0.5s ease;
   z-index: 1;
+}
+.grid-image-inner-wrapper.tiny-playing .grid-loop-video-tiny {
+  opacity: 1;
 }
 .grid-image .grid-loop-video {
   opacity: 0;
