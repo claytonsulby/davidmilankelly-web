@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import PlaybackOverlay from './components/PlaybackOverlay.jsx'
 
 export default function App() {
   const initialized = useRef(false)
@@ -411,18 +412,7 @@ export default function App() {
 
   return (
     <>
-      {/* Playback overlay */}
-      <div id="playback-overlay" aria-hidden="true">
-        <div className="playback-backdrop" aria-hidden="true"></div>
-        <div className="playback-inner">
-          <button type="button" className="playback-close" aria-label="Close">&times;</button>
-          <div className="playback-video-wrap">
-            <div id="playback-embed"></div>
-            <div id="playback-video-overlay-copy" className="playback-video-overlay-copy" aria-hidden="true"></div>
-          </div>
-          <div id="playback-caption" className="playback-caption"></div>
-        </div>
-      </div>
+      <PlaybackOverlay />
 
       {/* Photo lightbox */}
       <div id="photo-lightbox" aria-hidden="true">
